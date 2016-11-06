@@ -45,15 +45,29 @@ def compress(text, model): # Returns the length of the message and a list of boo
 				compressed_message.append(False) # represents a 0.
 				max_val = max_val // 2
 		model.next_char(a) # Tells the model what the current character is so it can update the probability distribution of the next character.
+	while bottom > 0 or top < max_val:
+		if (top - (max_val // 2)) > ((max_val // 2) - bottom):
+			top = top - max_val // 2
+			bottom = bottom - max_val // 2
+			if bottom < 0:
+				bottom = 0
+			max_val = max_val // 2
+			compressed_message.append(True)
+		else:
+			max_val = max_val // 2
+			if top > max_val:
+				top = max_val
+			compressed_message.append(False)
 	return [message_length, compressed_message] 
 
-def decompress(message, model);
+def decompress(message, model):
 	message_length = message[0]
 	compressed_message = message[1]
 	text = []
 	bottom = 0
 	top = 2*resolution
 	max_val = top
+	message_position = 0
 	while len(text) < message_length:
 		probs = model.probabilities()
 		current_res = top - bottom
@@ -62,29 +76,40 @@ def decompress(message, model);
 			bottom *= 2
 			max_val *= 2
 			current_res *= 2
+		temp = bottom
 		character_intervals = []
-		val = 0
-		character_intervals.append(val)
+		character_intervals.append(temp)
 		for x in [i for i in character_list if ord(i) < 126]:
-			val += int(probs[x]*max_val)
-			character_intervals.append(val)
-		character_intervals.append(max_val)
+			temp += int(probs[x]*current_res)
+			character_intervals.append(temp)
+		character_intervals.append(bottom + current_res)
+		temp_pos = message_position
 		determined = False
+		temp_bottom = 0
+		temp_top = max_val
+		next_char_index = -1
 		while not determined:
-			if len(compressed_message) == 0:
-				return text
-			if compressed_message.pop(0):
-				bottom = (bottom + top) // 2
+			if len(compressed_message) <= temp_pos: # the compressed message is not long enough to determined the specified number of characters.
+				return text # There must have been an error and so we return the text recovered so far.
+			if compressed_message[temp_pos]:
+				temp_bottom = (temp_bottom + temp_top) // 2 + 1
 			else:
-				top = (bottom + top) // 2
-			intervals_lower = [a for a in character_intervals if a < top]
-			intervals_upper = [a for a in character_intervals if a >= top]
-			if intervals_lower[-1] <= bottom:
-				next_char = character_list[len(intervals)]
-				text.append(next_char)
-				model.next_char(next_char)
-				max_val = intervals_upper[0] - intervals_lower[-1]
-				top = top - intervals_lower[-1]
-				bottom = bottom - intervals_lower[-1]
+				temp_top = (temp_bottom + temp_top) // 2
+			temp_pos += 1
+			intervals_lower = [a for a in character_intervals if a < temp_top]
+			if intervals_lower[-1] <= temp_bottom: # If the next character has been determined, exit the loop
+				text.append(character_list[len(intervals_lower)-1])
+				next_char_index = len(intervals_lower) - 1
 				determined = True
-	return text[:message_length]
+		bottom = character_intervals[next_char_index]
+		top = character_intervals[next_char_index+1]
+		while bottom >= max_val // 2 or top < max_val // 2:
+			message_position += 1
+			if bottom >= max_val // 2:
+				bottom -= (max_val // 2)
+				top -= (max_val // 2)
+				max_val = max_val // 2
+			elif top < max_val // 2:
+				max_val = max_val // 2
+		model.next_char(text[-1])
+	return "".join(text)
