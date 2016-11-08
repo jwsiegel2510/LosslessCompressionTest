@@ -28,12 +28,11 @@ class OneFrequencyModel:
 			for c in text:
 				if c in occurrence_number: # extraneous characters might occur
 					occurrence_number[c] += 1
-			for i in range(5):
+			for i in range(100):
 				next_link = links[randint(0,len(links))]
 				response = requests.get("https://en.wikipedia.org" + next_link['href'])
 				soup = BeautifulSoup(response.text, "lxml")
 				paragraphs = soup.body.find_all('p')
-				links = []
 				for p in paragraphs:
 					links += [link for link in p.find_all('a') if link['href'][0] != '#']
 					text = re.sub(r'\[\d*\]','',p.getText()) # remove references from the text
