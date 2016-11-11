@@ -6,9 +6,9 @@
 
 from source_coder import compress
 from source_coder import decompress
-from two_frequency_model import TwoFrequencyModel # change this line to test a different model.
+from one_frequency_model import OneFrequencyModel # change this line to test a different model.
 
-model = TwoFrequencyModel() # change this line to test a different model.
+model = OneFrequencyModel() # change this line to test a different model.
 
 message = ''
 with open('HitchHikersGuide.txt','r') as myfile:
